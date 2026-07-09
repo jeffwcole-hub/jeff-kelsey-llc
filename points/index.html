@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#150d2e">
 <title>Ten Points</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <!--
   ═══════════════════════════════════════════════════════════
   TEN POINTS — a very serious economy for two people
@@ -203,6 +206,24 @@
   }
   .drawer-link.current { border-color: rgba(255, 217, 142, 0.5); }
   .drawer-link.current .dept { color: var(--gold); }
+
+  .drawer-notify {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--ink-dim);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1.5px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 14px;
+    padding: 12px;
+    cursor: pointer;
+    margin-bottom: 14px;
+  }
+  .drawer-notify:disabled {
+    color: var(--gold);
+    border-style: solid;
+    border-color: rgba(255, 217, 142, 0.4);
+  }
 
   .drawer-foot {
     margin-top: auto;
@@ -693,12 +714,21 @@
     <div class="drawer-eyebrow">Divisions</div>
     <a class="drawer-link" href="/">
       <div class="app-name">How Long Are We Apart?</div>
-      <div class="dept">Department of Distance</div>
+      <div class="dept">Department of Weights and Measures</div>
     </a>
     <a class="drawer-link current" href="/points/">
       <div class="app-name">Ten Points</div>
       <div class="dept">Department of the Treasury</div>
     </a>
+    <a class="drawer-link" href="/pips/">
+      <div class="app-name">PIPs 📋</div>
+      <div class="dept">Department of Human Resources</div>
+    </a>
+    <a class="drawer-link" href="/list/">
+      <div class="app-name">💩 List</div>
+      <div class="dept">Department of Public Health</div>
+    </a>
+    <button class="drawer-notify" id="notify-btn">🔔 Enable notifications</button>
     <div class="drawer-foot">A very serious company</div>
   </nav>
 </div>
@@ -1113,6 +1143,70 @@ drawerVeil.addEventListener('click', e => { if (e.target === drawerVeil) toggleD
 /* ═════════ BOOT ═════════ */
 initData();
 if (!me) askIdentity();
+
+/* ═════════ PWA ═════════ */
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+/* ═════════ PUSH NOTIFICATIONS ═════════ */
+function urlB64ToUint8Array(s) {
+  const pad = '='.repeat((4 - s.length % 4) % 4);
+  const b64 = (s + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(b64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+(function () {
+  const btn = document.getElementById('notify-btn');
+  if (!btn) return;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    btn.style.display = 'none';
+    return;
+  }
+  async function refresh() {
+    try {
+      if (Notification.permission === 'granted') {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) { btn.textContent = '\u{1F514} Notifications on'; btn.disabled = true; return; }
+      }
+    } catch {}
+    btn.textContent = '\u{1F514} Enable notifications';
+    btn.disabled = false;
+  }
+  btn.addEventListener('click', async () => {
+    const who = localStorage.getItem('tp_identity');
+    if (!who) {
+      if (typeof askIdentity === 'function') askIdentity();
+      else alert('Pick who you are in Ten Points first, then come back.');
+      return;
+    }
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return;
+      const reg = await navigator.serviceWorker.ready;
+      const { publicKey } = await (await fetch('/api/push')).json();
+      if (!publicKey) { alert('Push keys are not configured on the server yet.'); return; }
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlB64ToUint8Array(publicKey)
+      });
+      await fetch('/api/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'subscribe', by: who, subscription: sub })
+      });
+      refresh();
+    } catch (e) {
+      alert('Could not enable notifications: ' + (e.message || e));
+    }
+  });
+  refresh();
+})();
 </script>
 </body>
 </html>

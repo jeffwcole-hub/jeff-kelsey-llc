@@ -1,5 +1,5 @@
-const CACHE = 'jk-llc-v1';
-const SHELL = ['/', '/points/'];
+const CACHE = 'jk-llc-v2';
+const SHELL = ['/', '/points/', '/pips/', '/list/'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -32,4 +32,26 @@ self.addEventListener('fetch', e => {
         .catch(() => caches.match(e.request, { ignoreSearch: true }))
     );
   }
+});
+
+self.addEventListener('push', e => {
+  let data = {};
+  try { data = e.data.json(); } catch {}
+  e.waitUntil(self.registration.showNotification(data.title || 'Kelsey & Jeff LLC', {
+    body: data.body || '',
+    icon: '/icon-512.png',
+    badge: '/icon-512.png',
+    data: { url: data.url || '/' }
+  }));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/';
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    for (const c of list) {
+      if ('focus' in c) { c.navigate(url); return c.focus(); }
+    }
+    return clients.openWindow(url);
+  }));
 });

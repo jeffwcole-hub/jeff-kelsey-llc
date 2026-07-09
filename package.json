@@ -4,6 +4,7 @@
   "private": true,
   "description": "A very serious economy for two people",
   "dependencies": {
-    "@netlify/blobs": "^8.1.0"
+    "@netlify/blobs": "^8.1.0",
+    "web-push": "^3.6.7"
   }
 }

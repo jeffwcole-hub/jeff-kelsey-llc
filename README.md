@@ -2,8 +2,13 @@
 
 A very serious company. One Netlify site, two divisions:
 
-- **/** — How Long Are We Apart? (Department of Distance)
+- **/** — How Long Are We Apart? (Department of Weights and Measures)
 - **/points/** — Ten Points (Department of the Treasury)
+- **/pips/** — PIPs (Department of Human Resources): each partner's
+  Performance Improvement Plan, administered exclusively by the other.
+  Items marked improved are archived as growth history.
+- **/list/** — 💩 List (Department of Public Health): a shared grievance
+  record. Anyone can file; only the aggrieved party may settle.
 
 A shared frosted-glass hamburger drawer navigates between them.
 
@@ -26,10 +31,27 @@ netlify deploy --prod
 > Drag-and-drop deploys won't work: the points function needs its
 > `@netlify/blobs` dependency bundled (git build or CLI does this).
 
+## Push notifications (one-time setup)
+
+All three apps send push notifications (PIP items, point awards,
+grievances) to the other person's devices. To activate:
+
+1. In Netlify: **Site configuration → Environment variables**, add:
+   - `VAPID_PUBLIC_KEY` — from your key pair
+   - `VAPID_PRIVATE_KEY` — from your key pair
+   - `VAPID_SUBJECT` — `mailto:you@example.com` (any real-ish mailto)
+2. Redeploy the site
+3. On each phone: install the site to the home screen (required by
+   iOS for web push), open it, then in the hamburger drawer tap
+   **🔔 Enable notifications** and allow.
+
+Notifications only go to the *other* person — you never get pinged
+for your own filings.
+
 ## Before first deploy
 
 Copy your existing PWA icons into the repo root:
-- `icon-192.png`
+- `icon-512.png`
 - `apple-touch-icon.png`
 
 (`manifest.webmanifest` and `sw.js` are included and cover both pages;

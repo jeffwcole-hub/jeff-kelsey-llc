@@ -1,4 +1,7 @@
 import { getStore } from '@netlify/blobs';
+import { sendPush } from '../lib/send-push.mjs';
+
+const NAMES = { kelsey: 'Kelsey', jeff: 'Jeff' };
 
 const PLAYERS = ['kelsey', 'jeff'];
 
@@ -43,6 +46,16 @@ export default async (req) => {
     const entries = (await store.get('entries', { type: 'json' })) || [];
     entries.unshift(entry);
     await store.setJSON('entries', entries);
+
+    try {
+      await sendPush(to, {
+        title: 'Ten Points',
+        body: amt > 0
+          ? `${NAMES[by]} awarded you +${amt} — ${why}`
+          : `${NAMES[by]} deducted −${Math.abs(amt)} — ${why}`,
+        url: '/points/'
+      });
+    } catch {}
 
     return Response.json(entry, { status: 201 });
   }
